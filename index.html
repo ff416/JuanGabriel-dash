@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>JuanGabriel Dash</title>
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    background:#2b0040;
+    font-family:Arial;
+    color:white;
+}
+canvas{
+    display:block;
+    background:linear-gradient(to top,#3d0066,#1a0033);
+}
+#score{
+    position:absolute;
+    top:10px;
+    left:10px;
+    font-size:20px;
+}
+</style>
+</head>
+<body>
+
+<div id="score">Score: 0</div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+/* =========================
+   🎵 MUSICA GENERADA POR CODIGO
+========================= */
+let audioCtx;
+let beatInterval;
+let musicStarted = false;
+
+function startMusic(){
+    if(musicStarted) return;
+    musicStarted = true;
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    beatInterval = setInterval(()=>{
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "square";
+        osc.frequency.value = 220 + Math.random()*200;
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc.stop(audioCtx.currentTime + 0.2);
+
+    },250);
+}
+
+/* =========================
+   🎮 JUEGO
+========================= */
+
+let player = {
+    x:100,
+    y:canvas.height-150,
+    size:50,
+    dy:0,
+    gravity:0.8,
+    jumpForce:-15,
+    grounded:false,
+    rotation:0
+};
+
+let obstacles = [];
+let score = 0;
+let speed = 6;
+let gameOver = false;
+
+function spawnObstacle(){
+    let height = 50 + Math.random()*50;
+    obstacles.push({
+        x:canvas.width,
+        y:canvas.height-height-100,
+        width:40,
+        height:height
+    });
+}
+setInterval(spawnObstacle,1500);
+
+function drawGround(){
+    ctx.fillStyle="#9900cc";
+    ctx.fillRect(0,canvas.height-100,canvas.width,100);
+}
+
+function drawPlayer(){
+    ctx.save();
+    ctx.translate(player.x + player.size/2, player.y + player.size/2);
+    ctx.rotate(player.rotation);
+    ctx.fillStyle="#ff66cc";
+    ctx.fillRect(-player.size/2,-player.size/2,player.size,player.size);
+    ctx.restore();
+}
+
+function update(){
+    if(gameOver) return;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    drawGround();
+
+    player.dy += player.gravity;
+    player.y += player.dy;
+
+    if(player.y + player.size >= canvas.height-100){
+        player.y = canvas.height-100-player.size;
+        player.dy = 0;
+        player.grounded = true;
+        player.rotation = 0;
+    } else {
+        player.grounded = false;
+        player.rotation += 0.1;
+    }
+
+    drawPlayer();
+
+    obstacles.forEach((obs,index)=>{
+        obs.x -= speed;
+        ctx.fillStyle="#ff0000";
+        ctx.fillRect(obs.x,obs.y,obs.width,obs.height);
+
+        if(
+            player.x < obs.x + obs.width &&
+            player.x + player.size > obs.x &&
+            player.y < obs.y + obs.height &&
+            player.y + player.size > obs.y
+        ){
+            gameOver = true;
+            alert("💔 PERDISTE! Score: " + score);
+            location.reload();
+        }
+
+        if(obs.x + obs.width < 0){
+            obstacles.splice(index,1);
+            score++;
+            document.getElementById("score").innerText="Score: "+score;
+        }
+    });
+
+    requestAnimationFrame(update);
+}
+
+function jump(){
+    if(player.grounded){
+        player.dy = player.jumpForce;
+    }
+    startMusic(); // 🔥 empieza la musica al tocar
+}
+
+window.addEventListener("touchstart",jump);
+window.addEventListener("click",jump);
+window.addEventListener("keydown",(e)=>{
+    if(e.code==="Space") jump();
+});
+
+update();
+</script>
+
+</body>
+</html>
