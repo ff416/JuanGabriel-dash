@@ -72,7 +72,6 @@ canvas {
   <source src="https://www.dropbox.com/s/1k6v9fxgq2c2e4y/Querida.mp3?raw=1" type="audio/mpeg">
 </audio>
 
-<!-- Script del juego -->
 <script>
 // Niveles
 const niveles = [
@@ -95,7 +94,7 @@ let cubo = { x:50, y:canvas.height-100, width:50, height:50, dy:0 };
 let gravedad = 0.8;
 let salto = -15;
 let obstaculos = [];
-let frame = 0;
+let contadorFrames = 0;
 
 // Iniciar nivel
 function iniciarNivel(indice) {
@@ -105,7 +104,7 @@ function iniciarNivel(indice) {
     cubo.y = canvas.height-100;
     cubo.dy = 0;
     obstaculos = [];
-    frame = 0;
+    contadorFrames = 0;
     juegoActivo = true;
     requestAnimationFrame(gameLoop);
 }
@@ -121,7 +120,8 @@ function saltar() {
 // Loop del juego
 function gameLoop() {
     if(!juegoActivo) return;
-    frame++;
+
+    contadorFrames++;
 
     // Fondo
     ctx.fillStyle = nivelActual.colorFondo;
@@ -135,13 +135,12 @@ function gameLoop() {
     ctx.fillRect(cubo.x, cubo.y, cubo.width, cubo.height);
 
     // Obstáculos
-    if(frame % nivelActual.frecuenciaObstaculos === 0) {
+    if(contadorFrames % nivelActual.frecuenciaObstaculos === 0) {
         let altura = Math.random()*100 + 50;
         obstaculos.push({ x:canvas.width, y:canvas.height-100-altura, width:50, height:altura });
     }
 
-    for(let i=0;i<obstaculos.length;i++){
-        let obs = obstaculos[i];
+    obstaculos.forEach((obs, index) => {
         obs.x -= nivelActual.velocidad;
         ctx.fillStyle = "red";
         ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
@@ -155,10 +154,10 @@ function gameLoop() {
             alert("¡Te chocaste! Score: "+score);
             document.getElementById("menu").style.display = "block";
         }
-    }
 
-    // Limpiar obstáculos fuera de pantalla
-    obstaculos = obstaculos.filter(o => o.x+o.width>0);
+        // Eliminar obstáculos fuera de pantalla
+        if(obs.x + obs.width < 0) obstaculos.splice(index,1);
+    });
 
     // Score
     ctx.fillStyle = "white";
