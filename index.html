@@ -1,193 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
- <meta charset="UTF-8">
-    <title>JuanGabriel Dash</title>
- <!-- Evitar caché para que siempre cargue la versión nueva -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<title>JuanGabriel Dash</title>
 
-    <!-- Pantalla completa en Android/iOS -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Evitar caché -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
-    <!-- Icono estilo JuanGabriel Dash -->
-    <link rel="icon" href="https://i.imgur.com/3tQp9kL.png">
-    <link rel="apple-touch-icon" href="https://i.imgur.com/3tQp9kL.png">
+<!-- Pantalla completa Android/iOS -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <!-- Estilos de tu juego -->
-    <style>
-        body {
-            margin:0;
-            overflow:hidden;
-            background:#2b0040;
-            font-family:Arial;
-            color:white;
-        }
-        canvas {
-            display:block;
-            background:linear-gradient(to top,#3d0066,#1a0033);
-        }
-        #score {
-            position:absolute;
-            top:10px;
-            left:10px;
-            font-size:20px;
-        }
-    </style>
+<!-- Icono -->
+<link rel="icon" href="https://i.imgur.com/3tQp9kL.png">
+<link rel="apple-touch-icon" href="https://i.imgur.com/3tQp9kL.png">
+
+<!-- Estilos -->
+<style>
+body {
+    margin:0;
+    overflow:hidden;
+    background:#2b0040;
+    font-family:Arial;
+    color:white;
+}
+canvas {
+    display:block;
+    background: linear-gradient(to top,#3d0066,#1a0033);
+}
+#score {
+    position:absolute;
+    top:10px;
+    left:10px;
+    font-size:20px;
+}
+#menu {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    text-align:center;
+    color:white;
+    font-family:Arial;
+}
+#menu button {
+    margin:5px;
+    padding:10px 20px;
+    font-size:18px;
+}
+</style>
 </head>
 <body>
 
-<div id="score">Score: 0</div>
-<canvas id="game"></canvas>
+<!-- Menú de selección -->
+<div id="menu">
+    <h1>JuanGabriel Dash</h1>
+    <button onclick="iniciarNivel(0)">Nivel 1</button>
+    <button onclick="iniciarNivel(1)">Nivel 2</button>
+    <button onclick="iniciarNivel(2)">Nivel 3</button>
+</div>
 
+<!-- Canvas y score -->
+<canvas id="gameCanvas"></canvas>
+<div id="score">Score: 0</div>
+
+<!-- Script del juego -->
 <script>
-const canvas = document.getElementById("game");
+// Niveles
+const niveles = [
+    { nombre: "Nivel 1", colorFondo: "#3d0066", velocidad: 3 },
+    { nombre: "Nivel 2", colorFondo: "#6a0055", velocidad: 4 },
+    { nombre: "Nivel 3", colorFondo: "#9a0033", velocidad: 5 }
+];
+
+// Canvas
+const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-/* =========================
-   🎵 MUSICA GENERADA POR CODIGO
-========================= */
-let audioCtx;
-let beatInterval;
-let musicStarted = false;
-
-function startMusic(){
-    if(musicStarted) return;
-    musicStarted = true;
-
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    beatInterval = setInterval(()=>{
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = "square";
-        osc.frequency.value = 220 + Math.random()*200;
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start();
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-        osc.stop(audioCtx.currentTime + 0.2);
-
-    },250);
-}
-
-/* =========================
-   🎮 JUEGO
-========================= */
-
-let player = {
-    x:100,
-    y:canvas.height-150,
-    size:50,
-    dy:0,
-    gravity:0.8,
-    jumpForce:-15,
-    grounded:false,
-    rotation:0
-};
-
-let obstacles = [];
+// Variables
+let juegoActivo = false;
+let nivelActual;
 let score = 0;
-let speed = 6;
-let gameOver = false;
 
-function spawnObstacle(){
-    let height = 50 + Math.random()*50;
-    obstacles.push({
-        x:canvas.width,
-        y:canvas.height-height-100,
-        width:40,
-        height:height
-    });
-}
-setInterval(spawnObstacle,1500);
-
-function drawGround(){
-    ctx.fillStyle="#9900cc";
-    ctx.fillRect(0,canvas.height-100,canvas.width,100);
+// Función para iniciar nivel
+function iniciarNivel(indice) {
+    document.getElementById("menu").style.display = "none";
+    nivelActual = niveles[indice];
+    score = 0;
+    juegoActivo = true;
+    requestAnimationFrame(gameLoop);
 }
 
-function drawPlayer(){
-    ctx.save();
-    ctx.translate(player.x + player.size/2, player.y + player.size/2);
-    ctx.rotate(player.rotation);
-    ctx.fillStyle="#ff66cc";
-    ctx.fillRect(-player.size/2,-player.size/2,player.size,player.size);
-    ctx.restore();
+// Loop del juego
+function gameLoop() {
+    if(!juegoActivo) return;
+
+    // Fondo según nivel
+    ctx.fillStyle = nivelActual.colorFondo;
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // Cubo simple
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(50, canvas.height-100, 50, 50);
+
+    // Score
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, 10, 30);
+
+    // Aumenta score
+    score += 1;
+
+    requestAnimationFrame(gameLoop);
 }
 
-function update(){
-    if(gameOver) return;
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    drawGround();
-
-    player.dy += player.gravity;
-    player.y += player.dy;
-
-    if(player.y + player.size >= canvas.height-100){
-        player.y = canvas.height-100-player.size;
-        player.dy = 0;
-        player.grounded = true;
-        player.rotation = 0;
-    } else {
-        player.grounded = false;
-        player.rotation += 0.1;
-    }
-
-    drawPlayer();
-
-    obstacles.forEach((obs,index)=>{
-        obs.x -= speed;
-        ctx.fillStyle="#ff0000";
-        ctx.fillRect(obs.x,obs.y,obs.width,obs.height);
-
-        if(
-            player.x < obs.x + obs.width &&
-            player.x + player.size > obs.x &&
-            player.y < obs.y + obs.height &&
-            player.y + player.size > obs.y
-        ){
-            gameOver = true;
-            alert("💔 PERDISTE! Score: " + score);
-            location.reload();
-        }
-
-        if(obs.x + obs.width < 0){
-            obstacles.splice(index,1);
-            score++;
-            document.getElementById("score").innerText="Score: "+score;
-        }
-    });
-
-    requestAnimationFrame(update);
-}
-
-function jump(){
-    if(player.grounded){
-        player.dy = player.jumpForce;
-    }
-    startMusic(); // 🔥 empieza la musica al tocar
-}
-
-window.addEventListener("touchstart",jump);
-window.addEventListener("click",jump);
-window.addEventListener("keydown",(e)=>{
-    if(e.code==="Space") jump();
+// Ajustar canvas al cambiar tamaño
+window.addEventListener("resize", ()=>{
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 });
-
-update();
 </script>
-
 </body>
 </html>
