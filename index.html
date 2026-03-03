@@ -1,156 +1,18 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>JuanGabriel Dash</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body{
-    margin:0;
-    overflow:hidden;
-    background:#2b0040;
-    font-family:Arial;
-    color:white;
-}
-canvas{
-    display:block;
-}
-#menu{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    text-align:center;
-}
-#menu button{
-    padding:10px 20px;
-    margin:5px;
-    font-size:18px;
-}
-</style>
+<title>Test</title>
 </head>
-<body>
+<body style="background:black;color:white;text-align:center;">
 
-<div id="menu">
-    <h1>JuanGabriel Dash</h1>
-    <button onclick="startGame(0)">Nivel 1</button>
-    <button onclick="startGame(1)">Nivel 2</button>
-    <button onclick="startGame(2)">Nivel 3</button>
-</div>
-
-<canvas id="game"></canvas>
+<h1>Test Botón</h1>
+<button onclick="probar()">Click aquí</button>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const niveles = [
-    { velocidad:3, frecuencia:120, color:"#3d0066" },
-    { velocidad:4, frecuencia:90,  color:"#6a0055" },
-    { velocidad:5, frecuencia:60,  color:"#9a0033" }
-];
-
-let jugador = { x:100, y:0, size:50, dy:0 };
-let gravedad = 0.8;
-let salto = -15;
-let suelo;
-let obstaculos = [];
-let frame = 0;
-let nivel;
-let jugando = false;
-
-// 🎵 Música generada por script
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let oscillator;
-
-function playMusic(){
-    oscillator = audioCtx.createOscillator();
-    oscillator.type = "square";
-    oscillator.frequency.value = 220;
-    oscillator.connect(audioCtx.destination);
-    oscillator.start();
+function probar(){
+    alert("Funciona");
 }
+</script>
 
-function stopMusic(){
-    if(oscillator) oscillator.stop();
-}
-
-function startGame(index){
-    nivel = niveles[index];
-    document.getElementById("menu").style.display = "none";
-    jugador.y = canvas.height - 50;
-    jugador.dy = 0;
-    suelo = canvas.height - 50;
-    obstaculos = [];
-    frame = 0;
-    jugando = true;
-    playMusic();
-    requestAnimationFrame(loop);
-}
-
-window.addEventListener("keydown", e=>{
-    if(e.code === "Space" && jugador.y >= suelo){
-        jugador.dy = salto;
-    }
-});
-
-window.addEventListener("touchstart", ()=>{
-    if(jugador.y >= suelo){
-        jugador.dy = salto;
-    }
-});
-
-function loop(){
-    if(!jugando) return;
-
-    frame++;
-
-    ctx.fillStyle = nivel.color;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // jugador
-    jugador.dy += gravedad;
-    jugador.y += jugador.dy;
-
-    if(jugador.y > suelo){
-        jugador.y = suelo;
-        jugador.dy = 0;
-    }
-
-    ctx.fillStyle = "yellow";
-    ctx.fillRect(jugador.x, jugador.y, jugador.size, jugador.size);
-
-    // crear obstáculo
-    if(frame % nivel.frecuencia === 0){
-        let altura = Math.random()*100 + 50;
-        obstaculos.push({
-            x:canvas.width,
-            y:canvas.height - altura,
-            w:40,
-            h:altura
-        });
-    }
-
-    // mover obstáculos
-    for(let i=0;i<obstaculos.length;i++){
-        let o = obstaculos[i];
-        o.x -= nivel.velocidad;
-
-        ctx.fillStyle="red";
-        ctx.fillRect(o.x,o.y,o.w,o.h);
-
-        // colisión correcta
-        if(
-            jugador.x < o.x + o.w &&
-            jugador.x + jugador.size > o.x &&
-            jugador.y < o.y + o.h &&
-            jugador.y + jugador.size > o.y
-        ){
-            jugando = false;
-            stopMusic();
-            alert("Perdiste
+</body>
+</html>
