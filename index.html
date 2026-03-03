@@ -4,50 +4,29 @@
 <meta charset="UTF-8">
 <title>JuanGabriel Dash</title>
 
-<!-- Evitar caché -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-
-<!-- Pantalla completa Android/iOS -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<!-- Icono -->
-<link rel="icon" href="https://i.imgur.com/3tQp9kL.png">
-<link rel="apple-touch-icon" href="https://i.imgur.com/3tQp9kL.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body {
+body{
     margin:0;
     overflow:hidden;
     background:#2b0040;
     font-family:Arial;
     color:white;
 }
-canvas {
+canvas{
     display:block;
-    background: linear-gradient(to top,#3d0066,#1a0033);
 }
-#score {
-    position:absolute;
-    top:10px;
-    left:10px;
-    font-size:20px;
-}
-#menu {
+#menu{
     position:absolute;
     top:50%;
     left:50%;
-    transform:translate(-50%, -50%);
+    transform:translate(-50%,-50%);
     text-align:center;
-    color:white;
-    font-family:Arial;
 }
-#menu button {
-    margin:5px;
+#menu button{
     padding:10px 20px;
+    margin:5px;
     font-size:18px;
 }
 </style>
@@ -56,113 +35,122 @@ canvas {
 
 <div id="menu">
     <h1>JuanGabriel Dash</h1>
-    <button id="btn1">Nivel 1</button>
-    <button id="btn2">Nivel 2</button>
-    <button id="btn3">Nivel 3</button>
+    <button onclick="startGame(0)">Nivel 1</button>
+    <button onclick="startGame(1)">Nivel 2</button>
+    <button onclick="startGame(2)">Nivel 3</button>
 </div>
 
-<canvas id="gameCanvas"></canvas>
-<div id="score">Score: 0</div>
-
-<audio id="musica" loop>
-  <source src="https://www.dropbox.com/s/1k6v9fxgq2c2e4y/Querida.mp3?raw=1" type="audio/mpeg">
-</audio>
+<canvas id="game"></canvas>
 
 <script>
-const niveles = [
-    { nombre: "Nivel 1", colorFondo: "#3d0066", velocidad: 3, frecuenciaObstaculos: 120 },
-    { nombre: "Nivel 2", colorFondo: "#6a0055", velocidad: 4, frecuenciaObstaculos: 90 },
-    { nombre: "Nivel 3", colorFondo: "#9a0033", velocidad: 5, frecuenciaObstaculos: 60 }
-];
-
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let juegoActivo = false;
-let nivelActual;
-let score = 0;
-let cubo = { x:50, y:canvas.height-50, width:50, height:50, dy:0 };
+const niveles = [
+    { velocidad:3, frecuencia:120, color:"#3d0066" },
+    { velocidad:4, frecuencia:90,  color:"#6a0055" },
+    { velocidad:5, frecuencia:60,  color:"#9a0033" }
+];
+
+let jugador = { x:100, y:0, size:50, dy:0 };
 let gravedad = 0.8;
 let salto = -15;
+let suelo;
 let obstaculos = [];
-let contadorFrames = 0;
+let frame = 0;
+let nivel;
+let jugando = false;
 
-// Función iniciar nivel
-function iniciarNivel(indice){
-    document.getElementById("menu").style.display = "none";
-    nivelActual = niveles[indice];
-    score = 0;
-    cubo.y = canvas.height-50;
-    cubo.dy = 0;
-    obstaculos = [];
-    contadorFrames = 0;
-    juegoActivo = true;
-    document.getElementById("musica").play().catch(()=>{});
-    requestAnimationFrame(gameLoop);
+// 🎵 Música generada por script
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator;
+
+function playMusic(){
+    oscillator = audioCtx.createOscillator();
+    oscillator.type = "square";
+    oscillator.frequency.value = 220;
+    oscillator.connect(audioCtx.destination);
+    oscillator.start();
 }
 
-// Conectar botones
-document.getElementById("btn1").addEventListener("click", ()=>iniciarNivel(0));
-document.getElementById("btn2").addEventListener("click", ()=>iniciarNivel(1));
-document.getElementById("btn3").addEventListener("click", ()=>iniciarNivel(2));
+function stopMusic(){
+    if(oscillator) oscillator.stop();
+}
 
-// Saltar
-window.addEventListener("keydown", e => { if(e.code === "Space") saltar(); });
-window.addEventListener("touchstart", saltar);
-function saltar(){ if(cubo.y>=canvas.height-50) cubo.dy = salto; }
+function startGame(index){
+    nivel = niveles[index];
+    document.getElementById("menu").style.display = "none";
+    jugador.y = canvas.height - 50;
+    jugador.dy = 0;
+    suelo = canvas.height - 50;
+    obstaculos = [];
+    frame = 0;
+    jugando = true;
+    playMusic();
+    requestAnimationFrame(loop);
+}
 
-function gameLoop(){
-    if(!juegoActivo) return;
-    contadorFrames++;
+window.addEventListener("keydown", e=>{
+    if(e.code === "Space" && jugador.y >= suelo){
+        jugador.dy = salto;
+    }
+});
 
-    // Fondo
-    ctx.fillStyle = nivelActual.colorFondo;
+window.addEventListener("touchstart", ()=>{
+    if(jugador.y >= suelo){
+        jugador.dy = salto;
+    }
+});
+
+function loop(){
+    if(!jugando) return;
+
+    frame++;
+
+    ctx.fillStyle = nivel.color;
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    // Cubo
-    cubo.dy += gravedad;
-    cubo.y += cubo.dy;
-    if(cubo.y>canvas.height-50) cubo.y=canvas.height-50;
-    ctx.fillStyle="yellow";
-    ctx.fillRect(cubo.x, cubo.y, cubo.width, cubo.height);
+    // jugador
+    jugador.dy += gravedad;
+    jugador.y += jugador.dy;
 
-    // Obstáculos
-    if(contadorFrames % nivelActual.frecuenciaObstaculos ===0){
-        let altura = Math.random()*150 + 30;
-        let ancho = Math.random()*40 +30;
-        obstaculos.push({x:canvas.width, y:canvas.height-50-altura, width:ancho, height:altura});
+    if(jugador.y > suelo){
+        jugador.y = suelo;
+        jugador.dy = 0;
     }
 
-    obstaculos.forEach((obs,index)=>{
-        obs.x -= nivelActual.velocidad;
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(jugador.x, jugador.y, jugador.size, jugador.size);
+
+    // crear obstáculo
+    if(frame % nivel.frecuencia === 0){
+        let altura = Math.random()*100 + 50;
+        obstaculos.push({
+            x:canvas.width,
+            y:canvas.height - altura,
+            w:40,
+            h:altura
+        });
+    }
+
+    // mover obstáculos
+    for(let i=0;i<obstaculos.length;i++){
+        let o = obstaculos[i];
+        o.x -= nivel.velocidad;
+
         ctx.fillStyle="red";
-        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        ctx.fillRect(o.x,o.y,o.w,o.h);
 
-        // Colisión
-        if(cubo.x<cubo.x + obs.width && cubo.x + cubo.width > obs.x &&
-           cubo.y < obs.y + obs.height && cubo.y + cubo.height > obs.y){
-            juegoActivo=false;
-            alert("¡Te chocaste! Score: "+score);
-            document.getElementById("menu").style.display="block";
-        }
-
-        if(obs.x + obs.width<0) obstaculos.splice(index,1);
-    });
-
-    ctx.fillStyle="white";
-    ctx.font="20px Arial";
-    ctx.fillText("Score: "+score,10,30);
-    score++;
-    requestAnimationFrame(gameLoop);
-}
-
-// Ajustar canvas
-window.addEventListener("resize", ()=>{
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
-</script>
-</body>
-</html>
+        // colisión correcta
+        if(
+            jugador.x < o.x + o.w &&
+            jugador.x + jugador.size > o.x &&
+            jugador.y < o.y + o.h &&
+            jugador.y + jugador.size > o.y
+        ){
+            jugando = false;
+            stopMusic();
+            alert("Perdiste
