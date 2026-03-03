@@ -69,20 +69,17 @@ canvas {
 </audio>
 
 <script>
-// Niveles
 const niveles = [
     { nombre: "Nivel 1", colorFondo: "#3d0066", velocidad: 3, frecuenciaObstaculos: 120 },
     { nombre: "Nivel 2", colorFondo: "#6a0055", velocidad: 4, frecuenciaObstaculos: 90 },
     { nombre: "Nivel 3", colorFondo: "#9a0033", velocidad: 5, frecuenciaObstaculos: 60 }
 ];
 
-// Canvas
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Variables
 let juegoActivo = false;
 let nivelActual;
 let score = 0;
@@ -92,8 +89,8 @@ let salto = -15;
 let obstaculos = [];
 let contadorFrames = 0;
 
-// Función para iniciar nivel
-function iniciarNivel(indice) {
+// Función iniciar nivel
+function iniciarNivel(indice){
     document.getElementById("menu").style.display = "none";
     nivelActual = niveles[indice];
     score = 0;
@@ -102,11 +99,11 @@ function iniciarNivel(indice) {
     obstaculos = [];
     contadorFrames = 0;
     juegoActivo = true;
-    document.getElementById("musica").play().catch(()=>{}); // Forzar autoplay en algunos navegadores
+    document.getElementById("musica").play().catch(()=>{});
     requestAnimationFrame(gameLoop);
 }
 
-// Botones conectados a la función
+// Conectar botones
 document.getElementById("btn1").addEventListener("click", ()=>iniciarNivel(0));
 document.getElementById("btn2").addEventListener("click", ()=>iniciarNivel(1));
 document.getElementById("btn3").addEventListener("click", ()=>iniciarNivel(2));
@@ -114,13 +111,9 @@ document.getElementById("btn3").addEventListener("click", ()=>iniciarNivel(2));
 // Saltar
 window.addEventListener("keydown", e => { if(e.code === "Space") saltar(); });
 window.addEventListener("touchstart", saltar);
+function saltar(){ if(cubo.y>=canvas.height-50) cubo.dy = salto; }
 
-function saltar() {
-    if(cubo.y >= canvas.height-50) cubo.dy = salto;
-}
-
-// Loop del juego
-function gameLoop() {
+function gameLoop(){
     if(!juegoActivo) return;
     contadorFrames++;
 
@@ -131,48 +124,41 @@ function gameLoop() {
     // Cubo
     cubo.dy += gravedad;
     cubo.y += cubo.dy;
-    if(cubo.y > canvas.height-50) cubo.y = canvas.height-50;
-    ctx.fillStyle = "yellow";
+    if(cubo.y>canvas.height-50) cubo.y=canvas.height-50;
+    ctx.fillStyle="yellow";
     ctx.fillRect(cubo.x, cubo.y, cubo.width, cubo.height);
 
     // Obstáculos
-    if(contadorFrames % nivelActual.frecuenciaObstaculos === 0) {
+    if(contadorFrames % nivelActual.frecuenciaObstaculos ===0){
         let altura = Math.random()*150 + 30;
-        let ancho = Math.random()*40 + 30;
-        obstaculos.push({ x:canvas.width, y:canvas.height-50-altura, width:ancho, height:altura });
+        let ancho = Math.random()*40 +30;
+        obstaculos.push({x:canvas.width, y:canvas.height-50-altura, width:ancho, height:altura});
     }
 
-    obstaculos.forEach((obs, index) => {
+    obstaculos.forEach((obs,index)=>{
         obs.x -= nivelActual.velocidad;
-        ctx.fillStyle = "red";
+        ctx.fillStyle="red";
         ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
         // Colisión
-        if(cubo.x < obs.x + obs.width &&
-           cubo.x + cubo.width > obs.x &&
-           cubo.y < obs.y + obs.height &&
-           cubo.y + cubo.height > obs.y) {
-            juegoActivo = false;
+        if(cubo.x<cubo.x + obs.width && cubo.x + cubo.width > obs.x &&
+           cubo.y < obs.y + obs.height && cubo.y + cubo.height > obs.y){
+            juegoActivo=false;
             alert("¡Te chocaste! Score: "+score);
-            document.getElementById("menu").style.display = "block";
+            document.getElementById("menu").style.display="block";
         }
 
-        // Limpiar fuera de pantalla
-        if(obs.x + obs.width < 0) obstaculos.splice(index,1);
+        if(obs.x + obs.width<0) obstaculos.splice(index,1);
     });
 
-    // Score
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.fillText("Score: "+score, 10, 30);
+    ctx.fillStyle="white";
+    ctx.font="20px Arial";
+    ctx.fillText("Score: "+score,10,30);
     score++;
-
-    if(contadorFrames % 600 === 0) nivelActual.velocidad += 0.5;
-
     requestAnimationFrame(gameLoop);
 }
 
-// Ajustar canvas al cambiar tamaño
+// Ajustar canvas
 window.addEventListener("resize", ()=>{
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
